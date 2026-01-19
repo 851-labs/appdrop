@@ -42,33 +42,16 @@ export function runReleasePipeline(context: ReleaseContext) {
 
     if (pipeline.notarizeApp) {
       run("/usr/bin/ditto", ["-c", "-k", "--keepParent", appPath, appZip]);
-      notarize(notaryKeyPath, env, appZip, "app");
+      notarizeArtifact(notaryKeyPath, env, appZip, "app");
       run("xcrun", ["stapler", "staple", appPath]);
       fs.rmSync(appZip, { force: true });
     }
 
     if (pipeline.createDmg) {
-      const dmgDir = path.join(buildDir, "dmg");
-      fs.rmSync(dmgDir, { recursive: true, force: true });
-      fs.mkdirSync(dmgDir, { recursive: true });
-      fs.cpSync(appPath, path.join(dmgDir, `${project.name}.app`), { recursive: true });
-
-      run("hdiutil", [
-        "create",
-        "-volname",
-        project.name,
-        "-srcfolder",
-        dmgDir,
-        "-ov",
-        "-format",
-        "UDZO",
-        dmgPath,
-      ]);
-
-      run("codesign", ["--force", "--timestamp", "--sign", env.DEVELOPER_ID_APPLICATION, dmgPath]);
+      createDmg(appPath, dmgPath, project.name, env.DEVELOPER_ID_APPLICATION);
 
       if (pipeline.notarizeDmg) {
-        notarize(notaryKeyPath, env, dmgPath, "dmg");
+        notarizeArtifact(notaryKeyPath, env, dmgPath, "dmg");
         run("xcrun", ["stapler", "staple", dmgPath]);
       }
 
@@ -83,7 +66,7 @@ export function runReleasePipeline(context: ReleaseContext) {
   }
 }
 
-function buildApp(project: ProjectInfo, derivedData: string, identity: string) {
+export function buildApp(project: ProjectInfo, derivedData: string, identity: string) {
   run("xcodebuild", [
     "-project",
     project.projectPath,
@@ -101,7 +84,7 @@ function buildApp(project: ProjectInfo, derivedData: string, identity: string) {
   ]);
 }
 
-function signApp(appPath: string, identity: string, entitlementsPath: string | null) {
+export function signApp(appPath: string, identity: string, entitlementsPath: string | null) {
   if (!entitlementsPath) {
     throw new AppdropError("Missing app entitlements", 2);
   }
@@ -118,7 +101,7 @@ function signApp(appPath: string, identity: string, entitlementsPath: string | n
   ]);
 }
 
-function signSparkle(appPath: string, identity: string, sparkleEntitlementsPath: string | null) {
+export function signSparkle(appPath: string, identity: string, sparkleEntitlementsPath: string | null) {
   if (!sparkleEntitlementsPath) {
     return;
   }
@@ -140,7 +123,28 @@ function signSparkle(appPath: string, identity: string, sparkleEntitlementsPath:
   signIfExists(sparkleFramework, identity, null);
 }
 
-function signIfExists(target: string, identity: string, entitlementsPath: string | null) {
+export function createDmg(appPath: string, dmgPath: string, name: string, identity: string) {
+  const dmgDir = path.join(path.dirname(dmgPath), "dmg");
+  fs.rmSync(dmgDir, { recursive: true, force: true });
+  fs.mkdirSync(dmgDir, { recursive: true });
+  fs.cpSync(appPath, path.join(dmgDir, `${name}.app`), { recursive: true });
+
+  run("hdiutil", [
+    "create",
+    "-volname",
+    name,
+    "-srcfolder",
+    dmgDir,
+    "-ov",
+    "-format",
+    "UDZO",
+    dmgPath,
+  ]);
+
+  run("codesign", ["--force", "--timestamp", "--sign", identity, dmgPath]);
+}
+
+export function signIfExists(target: string, identity: string, entitlementsPath: string | null) {
   if (!fs.existsSync(target)) {
     return;
   }
@@ -153,7 +157,7 @@ function signIfExists(target: string, identity: string, entitlementsPath: string
   run(args[0], args.slice(1));
 }
 
-function notarize(notaryKeyPath: string, env: Record<string, string>, target: string, label: string) {
+export function notarizeArtifact(notaryKeyPath: string, env: Record<string, string>, target: string, label: string) {
   const args = [
     "notarytool",
     "submit",
@@ -186,7 +190,7 @@ function notarize(notaryKeyPath: string, env: Record<string, string>, target: st
   }
 }
 
-function generateAppcast(tools: SparkleTools, dmgPath: string, releaseDir: string, sparkleKey: string) {
+export function generateAppcast(tools: SparkleTools, dmgPath: string, releaseDir: string, sparkleKey: string) {
   const keyPath = path.join(releaseDir, "sparkle_private_key");
   fs.writeFileSync(keyPath, sparkleKey.trim());
   try {
@@ -197,13 +201,13 @@ function generateAppcast(tools: SparkleTools, dmgPath: string, releaseDir: strin
   }
 }
 
-function ensureDirectory(target: string, message: string) {
+export function ensureDirectory(target: string, message: string) {
   if (!fs.existsSync(target)) {
     throw new AppdropError(message, 1);
   }
 }
 
-function writeNotaryKey(buildDir: string, key: string): string {
+export function writeNotaryKey(buildDir: string, key: string): string {
   const notaryDir = fs.mkdtempSync(path.join(buildDir, "notary-"));
   const keyPath = path.join(notaryDir, "AuthKey.p8");
   fs.writeFileSync(keyPath, key);

@@ -15,6 +15,10 @@ export interface GlobalFlags {
   noNotarize: boolean;
   noDmg: boolean;
   fix: boolean;
+  appPath?: string;
+  dmgPath?: string;
+  zipPath?: string;
+  appcastUrl?: string;
 }
 
 export interface ParsedArgs {
@@ -35,6 +39,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
     noNotarize: false,
     noDmg: false,
     fix: false,
+    appPath: undefined,
+    dmgPath: undefined,
+    zipPath: undefined,
+    appcastUrl: undefined,
   };
 
   const args = [...argv];
@@ -91,6 +99,22 @@ export function parseArgs(argv: string[]): ParsedArgs {
         break;
       case "--fix":
         flags.fix = true;
+        break;
+      case "--app-path":
+        flags.appPath = consumeValue(args, index, arg);
+        index += 1;
+        break;
+      case "--dmg-path":
+        flags.dmgPath = consumeValue(args, index, arg);
+        index += 1;
+        break;
+      case "--zip-path":
+        flags.zipPath = consumeValue(args, index, arg);
+        index += 1;
+        break;
+      case "--appcast-url":
+        flags.appcastUrl = consumeValue(args, index, arg);
+        index += 1;
         break;
       default:
         if (arg.startsWith("-")) {
