@@ -6,5 +6,8 @@
     "build": "bun build src/index.ts --compile --outfile dist/appdrop",
     "test": "bun test",
     "lint": "bun test --coverage"
+  },
+  "devDependencies": {
+    "lefthook": "^1.7.15"
   }
 }
