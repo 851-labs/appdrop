@@ -53,8 +53,8 @@ export function runDoctor(options: DoctorOptions, logger: Logger) {
     return;
   }
 
-  const resourcesDir = locateResourcesDir(project.root);
-  const charEntitlementsPath = path.join(resourcesDir, "char.entitlements");
+  const resourcesDir = locateResourcesDir(project.root, project.name);
+  const charEntitlementsPath = path.join(resourcesDir, `${project.name}.entitlements`);
   const sparkleEntitlementsPath = path.join(resourcesDir, "sparkle.entitlements");
 
   if (!fs.existsSync(charEntitlementsPath)) {
@@ -71,15 +71,15 @@ export function runDoctor(options: DoctorOptions, logger: Logger) {
     logger.warn("No Info.plist detected. Create one and set INFOPLIST_FILE in Xcode.");
   }
 
-  if (!locateEntitlements(project.root, "char.entitlements")) {
+  if (!locateEntitlements(project.root, `${project.name}.entitlements`)) {
     logger.warn("Entitlements still missing in project settings. Update CODE_SIGN_ENTITLEMENTS.");
   }
 }
 
-function locateResourcesDir(root: string): string {
+function locateResourcesDir(root: string, projectName: string): string {
   const candidates = [
     path.join(root, "Resources"),
-    path.join(root, "char", "Resources"),
+    path.join(root, projectName, "Resources"),
   ];
 
   for (const candidate of candidates) {

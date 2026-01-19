@@ -1,7 +1,13 @@
 import fs from "fs";
+import fs from "fs";
 import path from "path";
 import { DEFAULT_BUILD_DIR, DEFAULT_OUTPUT_DIR } from "./constants";
 import { ProjectInfo } from "./project";
+
+export interface SparkleTools {
+  signUpdate: string;
+  generateAppcast: string;
+}
 
 export interface Pipeline {
   buildApp: boolean;
@@ -11,8 +17,13 @@ export interface Pipeline {
   notarizeDmg: boolean;
   sparkle: boolean;
   generateAppcast: boolean;
+  sparkleEnabled: boolean;
   outputDir: string;
   buildDir: string;
+  infoPlistPath: string | null;
+  entitlementsPath: string | null;
+  sparkleEntitlementsPath: string | null;
+  sparkleTools: SparkleTools | null;
   missingEntitlements: boolean;
   missingInfoPlist: boolean;
 }
@@ -27,15 +38,16 @@ export function detectPipeline(project: ProjectInfo, options: DetectionOptions =
   const outputDir = path.resolve(project.root, options.outputDir ?? DEFAULT_OUTPUT_DIR);
   const buildDir = path.resolve(project.root, options.buildDir ?? DEFAULT_BUILD_DIR);
 
-  const infoPlist = locateInfoPlist(project.root);
-  const missingInfoPlist = !infoPlist;
+  const infoPlistPath = locateInfoPlist(project.root);
+  let missingInfoPlist = false;
 
-  const entitlementsPath = locateEntitlements(project.root, "char.entitlements");
+  const entitlementsPath = locateEntitlements(project.root, `${project.name}.entitlements`);
   const sparkleEntitlementsPath = locateEntitlements(project.root, "sparkle.entitlements");
 
-  const sparkleEnabled = infoPlist ? hasSparkleKeys(infoPlist) : false;
-  const sparkleToolsAvailable = Boolean(findSparkleTools(options.sparkleBin ?? process.env.SPARKLE_BIN));
-  const sparkle = sparkleEnabled && sparkleToolsAvailable;
+  const sparkleEnabled = infoPlistPath ? hasSparkleKeys(infoPlistPath) : false;
+  const sparkleTools = findSparkleTools(options.sparkleBin ?? process.env.SPARKLE_BIN);
+  const sparkle = sparkleEnabled && Boolean(sparkleTools);
+  missingInfoPlist = sparkleEnabled && !infoPlistPath;
 
   return {
     buildApp: true,
@@ -45,8 +57,13 @@ export function detectPipeline(project: ProjectInfo, options: DetectionOptions =
     notarizeDmg: true,
     sparkle,
     generateAppcast: sparkle,
+    sparkleEnabled,
     outputDir,
     buildDir,
+    infoPlistPath,
+    entitlementsPath,
+    sparkleEntitlementsPath,
+    sparkleTools,
     missingEntitlements: !entitlementsPath || (sparkleEnabled && !sparkleEntitlementsPath),
     missingInfoPlist,
   };
@@ -67,7 +84,7 @@ export function locateEntitlements(root: string, fileName: string): string | nul
   return candidates[0] ?? null;
 }
 
-export function findSparkleTools(explicitBin?: string): { signUpdate: string; generateAppcast: string } | null {
+export function findSparkleTools(explicitBin?: string): SparkleTools | null {
   const candidates: string[] = [];
   if (explicitBin) {
     candidates.push(explicitBin);

@@ -3,6 +3,7 @@ import { findProject } from "../lib/project";
 import { Logger } from "../lib/logger";
 import { loadEnv } from "../lib/env";
 import { UsageError } from "../lib/errors";
+import { runReleasePipeline } from "../lib/release";
 
 export interface ReleaseOptions {
   root: string;
@@ -17,7 +18,15 @@ export interface ReleaseOptions {
 
 export function runRelease(options: ReleaseOptions, logger: Logger) {
   const project = findProject(options.root, options.scheme, options.project);
-  const pipeline = detectPipeline(project, { outputDir: options.output, sparkleBin: process.env.SPARKLE_BIN });
+  let pipeline = detectPipeline(project, { outputDir: options.output, sparkleBin: process.env.SPARKLE_BIN });
+
+  if (options.noDmg) {
+    pipeline = { ...pipeline, createDmg: false, notarizeDmg: false, generateAppcast: false };
+  }
+
+  if (options.noNotarize) {
+    pipeline = { ...pipeline, notarizeApp: false, notarizeDmg: false };
+  }
 
   if (options.json) {
     logger.info(JSON.stringify({ project, pipeline }, null, 2));
@@ -35,7 +44,18 @@ export function runRelease(options: ReleaseOptions, logger: Logger) {
     throw new UsageError("Missing project configuration. Run `appdrop doctor --fix`.");
   }
 
-  loadEnv();
+  const requiredEnv = ["DEVELOPER_ID_APPLICATION"];
+  if (pipeline.notarizeApp || pipeline.notarizeDmg) {
+    requiredEnv.push("APP_STORE_CONNECT_KEY_ID", "APP_STORE_CONNECT_PRIVATE_KEY");
+  }
+  if (pipeline.sparkle) {
+    requiredEnv.push("SPARKLE_PRIVATE_KEY");
+  }
 
-  logger.info("Release pipeline execution not implemented yet.");
+  const env = loadEnv(requiredEnv);
+  if (process.env.APP_STORE_CONNECT_ISSUER_ID) {
+    env.APP_STORE_CONNECT_ISSUER_ID = process.env.APP_STORE_CONNECT_ISSUER_ID;
+  }
+
+  runReleasePipeline({ project, pipeline, env });
 }
