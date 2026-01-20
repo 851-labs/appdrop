@@ -8,12 +8,12 @@ import { runDmg } from "./commands/dmg";
 import { runNotarize } from "./commands/notarize";
 import { runAppcast } from "./commands/appcast";
 
-const VERSION = "0.1.0";
+import { APPDROP_VERSION } from "./lib/version";
 
 const { command, flags } = parseArgs(process.argv.slice(2));
 
 if (flags.version) {
-  process.stdout.write(`${VERSION}\n`);
+  process.stdout.write(`${APPDROP_VERSION}\n`);
   process.exit(0);
 }
 

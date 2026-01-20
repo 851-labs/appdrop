@@ -44,6 +44,7 @@ Optional:
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `SPARKLE_BIN`
 - `XCODE_PATH`
+- `APPDROP_VERSION` (build-time override)
 
 ## Auto-detect behavior
 
