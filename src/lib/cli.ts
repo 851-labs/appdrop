@@ -19,6 +19,12 @@ export interface GlobalFlags {
   dmgPath?: string;
   zipPath?: string;
   appcastUrl?: string;
+  xcodeOnly: boolean;
+  keychainOnly: boolean;
+  xcodePath?: string;
+  keychainName?: string;
+  writeGithubEnv: boolean;
+  force: boolean;
 }
 
 export interface ParsedArgs {
@@ -43,6 +49,12 @@ export function parseArgs(argv: string[]): ParsedArgs {
     dmgPath: undefined,
     zipPath: undefined,
     appcastUrl: undefined,
+    xcodeOnly: false,
+    keychainOnly: false,
+    xcodePath: undefined,
+    keychainName: undefined,
+    writeGithubEnv: false,
+    force: false,
   };
 
   const args = [...argv];
@@ -115,6 +127,26 @@ export function parseArgs(argv: string[]): ParsedArgs {
       case "--appcast-url":
         flags.appcastUrl = consumeValue(args, index, arg);
         index += 1;
+        break;
+      case "--xcode-only":
+        flags.xcodeOnly = true;
+        break;
+      case "--keychain-only":
+        flags.keychainOnly = true;
+        break;
+      case "--xcode-path":
+        flags.xcodePath = consumeValue(args, index, arg);
+        index += 1;
+        break;
+      case "--keychain-name":
+        flags.keychainName = consumeValue(args, index, arg);
+        index += 1;
+        break;
+      case "--write-github-env":
+        flags.writeGithubEnv = true;
+        break;
+      case "--force":
+        flags.force = true;
         break;
       default:
         if (arg.startsWith("-")) {

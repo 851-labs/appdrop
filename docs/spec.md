@@ -13,6 +13,7 @@ appdrop builds, signs, notarizes, and packages macOS apps with optional Sparkle 
 - `appdrop appcast` — generate appcast for a DMG
 - `appdrop doctor` — validate environment
 - `appdrop doctor --fix` — generate entitlements + patch project files
+- `appdrop setup-ci` — select Xcode + import signing cert for CI
 
 ## Release
 
@@ -36,6 +37,14 @@ Tagging the repo (`vX.Y.Z`) triggers a GitHub Release build that uploads a macOS
 - `--zip-path <path>`
 - `--appcast-url <url>`
 
+`setup-ci` flags:
+- `--xcode-only`
+- `--keychain-only`
+- `--xcode-path <path>`
+- `--keychain-name <name>`
+- `--write-github-env`
+- `--force`
+
 ## Environment Variables
 
 Required:
@@ -46,11 +55,18 @@ Required:
 
 Optional:
 - `APP_STORE_CONNECT_ISSUER_ID`
+- `DEVELOPER_ID_CERT_P12`
+- `DEVELOPER_ID_CERT_PASSWORD`
 - `SPARKLE_BIN`
 - `XCODE_PATH`
 - `APPDROP_VERSION` (build-time override)
 
 appdrop automatically loads a `.env` file in the current working directory (if present).
+
+`setup-ci` uses:
+- `DEVELOPER_ID_CERT_P12` (base64 encoded)
+- `DEVELOPER_ID_CERT_PASSWORD`
+- `XCODE_PATH` (optional)
 
 ## Auto-detect behavior
 
