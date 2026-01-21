@@ -134,10 +134,11 @@ function setupKeychainForCi(options: SetupCiOptions, logger: Logger) {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 
-  run("security", ["list-keychains", "-d", "user", "-s", keychainName]);
+  const keychainPath = resolveKeychainPath(keychainName);
+  run("security", ["list-keychains", "-d", "user", "-s", keychainPath, loginKeychainPath(), systemKeychainPath()]);
   run("security", ["set-key-partition-list", "-S", "apple-tool:,apple:", "-k", keychainPassword, keychainName]);
 
-  return { keychainPath: keychainName, password: keychainPassword };
+  return { keychainPath, password: keychainPassword };
 }
 
 function writeGithubEnv(vars: { keychainPath: string; password: string }, logger: Logger) {
@@ -201,6 +202,28 @@ function hasKeychain(keychainName: string) {
   } catch {
     return false;
   }
+}
+
+function resolveKeychainPath(keychainName: string) {
+  if (keychainName.includes("/")) {
+    return keychainName;
+  }
+  const home = process.env.HOME ?? os.homedir();
+  const legacy = path.join(home, "Library", "Keychains", keychainName);
+  const db = `${legacy}-db`;
+  if (fs.existsSync(db)) {
+    return db;
+  }
+  return legacy;
+}
+
+function loginKeychainPath() {
+  const home = process.env.HOME ?? os.homedir();
+  return path.join(home, "Library", "Keychains", "login.keychain-db");
+}
+
+function systemKeychainPath() {
+  return "/Library/Keychains/System.keychain";
 }
 
 function isGithubActions() {
