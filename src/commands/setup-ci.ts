@@ -26,6 +26,7 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
 
   const setupXcode = !options.keychainOnly;
   const setupKeychain = !options.xcodeOnly;
+  const shouldWriteGithubEnv = options.writeGithubEnv || isGithubActions();
 
   if (setupXcode) {
     selectXcode(options.xcodePath, logger);
@@ -33,14 +34,15 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
 
   if (setupKeychain) {
     const { keychainPath, password } = setupKeychainForCi(options, logger);
-    if (options.writeGithubEnv) {
+    if (shouldWriteGithubEnv) {
       writeGithubEnv({ keychainPath, password }, logger);
     } else {
       logger.info(`Keychain ready: ${keychainPath}`);
     }
   }
 
-  if (options.installSparkle) {
+  const needsSparkle = options.installSparkle || shouldInstallSparkle();
+  if (needsSparkle) {
     ensureSparkleTools(logger);
   }
 }
@@ -153,6 +155,14 @@ function normalizeKeychainName(name: string) {
 
 function shouldUseSudo() {
   return process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+}
+
+function isGithubActions() {
+  return process.env.GITHUB_ACTIONS === "true" && Boolean(process.env.GITHUB_ENV);
+}
+
+function shouldInstallSparkle() {
+  return Boolean(process.env.SPARKLE_PRIVATE_KEY);
 }
 
 function ensureSparkleTools(logger: Logger) {

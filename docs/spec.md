@@ -69,12 +69,16 @@ appdrop automatically loads a `.env` file in the current working directory (if p
 - `DEVELOPER_ID_CERT_PASSWORD`
 - `XCODE_PATH` (optional)
 
+`setup-ci` auto-detects:
+- GitHub Actions (`GITHUB_ENV`) to export keychain env values.
+- Sparkle tools when `SPARKLE_PRIVATE_KEY` is set.
+
 ## Example Usage
 
 CI setup (Xcode + signing keychain):
 
 ```
-appdrop setup-ci --write-github-env --install-sparkle
+appdrop setup-ci
 ```
 
 Only select Xcode:
