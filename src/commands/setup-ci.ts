@@ -7,6 +7,7 @@ import { Logger } from "../lib/logger";
 import { AppdropError, UsageError } from "../lib/errors";
 import { run } from "../lib/exec";
 import { loadEnv } from "../lib/env";
+import { findSparkleTools } from "../lib/pipeline";
 
 export interface SetupCiOptions {
   xcodeOnly: boolean;
@@ -48,6 +49,7 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
 
   if (plan.installSparkle) {
     ensureSparkleTools(logger);
+    clearSparkleQuarantine(logger);
   }
 }
 
@@ -243,6 +245,23 @@ function ensureSparkleTools(logger: Logger) {
 
   logger.info("Installing Sparkle tools (brew install sparkle)...");
   run("brew", ["install", "sparkle"]);
+}
+
+function clearSparkleQuarantine(logger: Logger) {
+  const tools = findSparkleTools(process.env.SPARKLE_BIN);
+  if (!tools) {
+    return;
+  }
+
+  const targets = [tools.signUpdate, tools.generateAppcast];
+  for (const target of targets) {
+    try {
+      run("xattr", ["-d", "com.apple.quarantine", target], { quiet: true });
+      logger.info(`Cleared quarantine: ${target}`);
+    } catch {
+      // ignore if no quarantine attribute
+    }
+  }
 }
 
 function commandExists(command: string) {
