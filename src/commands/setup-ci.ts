@@ -15,6 +15,7 @@ export interface SetupCiOptions {
   keychainName?: string;
   writeGithubEnv: boolean;
   force: boolean;
+  installSparkle: boolean;
 }
 
 export function runSetupCi(options: SetupCiOptions, logger: Logger) {
@@ -37,6 +38,10 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
     } else {
       logger.info(`Keychain ready: ${keychainPath}`);
     }
+  }
+
+  if (options.installSparkle) {
+    ensureSparkleTools(logger);
   }
 }
 
@@ -148,4 +153,24 @@ function normalizeKeychainName(name: string) {
 
 function shouldUseSudo() {
   return process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+}
+
+function ensureSparkleTools(logger: Logger) {
+  const generateAppcast = "generate_appcast";
+  if (commandExists(generateAppcast)) {
+    logger.info("Sparkle tools already installed.");
+    return;
+  }
+
+  logger.info("Installing Sparkle tools (brew install sparkle)...");
+  run("brew", ["install", "sparkle"]);
+}
+
+function commandExists(command: string) {
+  try {
+    run("/usr/bin/which", [command], { quiet: true });
+    return true;
+  } catch {
+    return false;
+  }
 }

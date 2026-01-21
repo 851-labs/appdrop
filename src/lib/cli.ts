@@ -25,6 +25,7 @@ export interface GlobalFlags {
   keychainName?: string;
   writeGithubEnv: boolean;
   force: boolean;
+  installSparkle: boolean;
 }
 
 export interface ParsedArgs {
@@ -55,6 +56,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     keychainName: undefined,
     writeGithubEnv: false,
     force: false,
+    installSparkle: false,
   };
 
   const args = [...argv];
@@ -147,6 +149,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
         break;
       case "--force":
         flags.force = true;
+        break;
+      case "--install-sparkle":
+        flags.installSparkle = true;
         break;
       default:
         if (arg.startsWith("-")) {

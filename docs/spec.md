@@ -43,6 +43,7 @@ Tagging the repo (`vX.Y.Z`) triggers a GitHub Release build that uploads a macOS
 - `--xcode-path <path>`
 - `--keychain-name <name>`
 - `--write-github-env`
+- `--install-sparkle`
 - `--force`
 
 ## Environment Variables
@@ -73,7 +74,7 @@ appdrop automatically loads a `.env` file in the current working directory (if p
 CI setup (Xcode + signing keychain):
 
 ```
-appdrop setup-ci --write-github-env
+appdrop setup-ci --write-github-env --install-sparkle
 ```
 
 Only select Xcode:
