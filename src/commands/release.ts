@@ -13,6 +13,7 @@ export interface ReleaseOptions {
   dryRun: boolean;
   noNotarize: boolean;
   noDmg: boolean;
+  noSparkle: boolean;
   json: boolean;
 }
 
@@ -22,6 +23,17 @@ export function runRelease(options: ReleaseOptions, logger: Logger) {
 
   if (options.noDmg) {
     pipeline = { ...pipeline, createDmg: false, notarizeDmg: false, generateAppcast: false };
+  }
+
+  if (options.noSparkle) {
+    pipeline = {
+      ...pipeline,
+      sparkle: false,
+      generateAppcast: false,
+      sparkleEnabled: false,
+      missingEntitlements: !pipeline.entitlementsPath,
+      missingInfoPlist: !pipeline.infoPlistPath,
+    };
   }
 
   if (options.noNotarize) {

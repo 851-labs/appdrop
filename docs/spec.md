@@ -113,6 +113,12 @@ Publish a release with assets:
 appdrop publish --tag v1.2.3 --asset build/release/app.dmg --asset build/release/appcast.xml
 ```
 
+Skip notarization and Sparkle (benchmarks):
+
+```
+appdrop release --no-notarize --no-sparkle
+```
+
 ## Auto-detect behavior
 
 - Locate the first `.xcodeproj` in the repo unless `--project` is passed.
@@ -136,3 +142,6 @@ And updates the Xcode project to reference them.
 - Human summary to stdout.
 - Errors to stderr.
 - `--json` outputs a structured plan and results.
+- `--no-dmg`
+- `--no-notarize`
+- `--no-sparkle`

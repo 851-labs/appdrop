@@ -14,6 +14,7 @@ export interface GlobalFlags {
   output?: string;
   noNotarize: boolean;
   noDmg: boolean;
+  noSparkle: boolean;
   fix: boolean;
   appPath?: string;
   dmgPath?: string;
@@ -52,6 +53,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     noInput: false,
     noNotarize: false,
     noDmg: false,
+    noSparkle: false,
     fix: false,
     appPath: undefined,
     dmgPath: undefined,
@@ -124,6 +126,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
         break;
       case "--no-dmg":
         flags.noDmg = true;
+        break;
+      case "--no-sparkle":
+        flags.noSparkle = true;
         break;
       case "--fix":
         flags.fix = true;
