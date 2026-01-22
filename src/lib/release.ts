@@ -26,8 +26,18 @@ export function runReleasePipeline(context: ReleaseContext) {
 
   const needsNotary = pipeline.notarizeApp || pipeline.notarizeDmg;
   const notaryKeyPath = needsNotary ? writeNotaryKey(buildDir, env.APP_STORE_CONNECT_PRIVATE_KEY) : null;
+  const entitlementsDir = fs.mkdtempSync(path.join(buildDir, "entitlements-"));
 
   try {
+    const bundleId = resolveBundleIdentifier(project);
+    const appEntitlementsPath = prepareEntitlements(pipeline.entitlementsPath, bundleId, entitlementsDir, "app");
+    const sparkleEntitlementsPath = prepareEntitlements(
+      pipeline.sparkleEntitlementsPath,
+      bundleId,
+      entitlementsDir,
+      "sparkle"
+    );
+
     buildApp(project, derivedData, env.DEVELOPER_ID_APPLICATION);
 
     const builtApp = path.join(derivedData, "Build/Products", "Release", `${project.name}.app`);
@@ -38,8 +48,8 @@ export function runReleasePipeline(context: ReleaseContext) {
     fs.rmSync(appZip, { force: true });
     fs.cpSync(builtApp, appPath, { recursive: true });
 
-    signSparkle(appPath, env.DEVELOPER_ID_APPLICATION, pipeline.sparkleEntitlementsPath);
-    signApp(appPath, env.DEVELOPER_ID_APPLICATION, pipeline.entitlementsPath);
+    signSparkle(appPath, env.DEVELOPER_ID_APPLICATION, sparkleEntitlementsPath);
+    signApp(appPath, env.DEVELOPER_ID_APPLICATION, appEntitlementsPath);
 
     if (pipeline.notarizeApp) {
       if (!notaryKeyPath) {
@@ -72,6 +82,7 @@ export function runReleasePipeline(context: ReleaseContext) {
     if (notaryKeyPath) {
       fs.rmSync(path.dirname(notaryKeyPath), { recursive: true, force: true });
     }
+    fs.rmSync(entitlementsDir, { recursive: true, force: true });
   }
 }
 
@@ -281,4 +292,49 @@ export function writeNotaryKey(buildDir: string, key: string): string {
   const keyPath = path.join(notaryDir, "AuthKey.p8");
   fs.writeFileSync(keyPath, key);
   return keyPath;
+}
+
+export function resolveBundleIdentifier(project: ProjectInfo): string | null {
+  try {
+    const result = run("xcodebuild", [
+      "-project",
+      project.projectPath,
+      "-scheme",
+      project.scheme,
+      "-configuration",
+      "Release",
+      "-showBuildSettings",
+    ], { quiet: true });
+    const match = result.stdout.match(/\bPRODUCT_BUNDLE_IDENTIFIER\b\s*=\s*(.+)/);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export function prepareEntitlements(
+  entitlementsPath: string | null,
+  bundleId: string | null,
+  outputDir: string,
+  label: string
+): string | null {
+  if (!entitlementsPath) {
+    return null;
+  }
+
+  if (!bundleId) {
+    return entitlementsPath;
+  }
+
+  const content = fs.readFileSync(entitlementsPath, "utf8");
+  if (!content.includes("PRODUCT_BUNDLE_IDENTIFIER")) {
+    return entitlementsPath;
+  }
+
+  const replaced = content
+    .replace(/\$\(PRODUCT_BUNDLE_IDENTIFIER\)/g, bundleId)
+    .replace(/\$\{PRODUCT_BUNDLE_IDENTIFIER\}/g, bundleId);
+  const outputPath = path.join(outputDir, `${label}.entitlements`);
+  fs.writeFileSync(outputPath, replaced);
+  return outputPath;
 }
