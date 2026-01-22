@@ -51,6 +51,7 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
     ensureSparkleTools(logger);
     clearSparkleQuarantine(logger);
     codesignSparkleTools(logger);
+    warnIfSparkleBlocked(logger);
   }
 }
 
@@ -284,6 +285,22 @@ function codesignSparkleTools(logger: Logger) {
       logger.info(`Codesigned Sparkle tool: ${target}`);
     } catch (error) {
       logger.warn(`Failed to codesign Sparkle tool: ${target}`);
+    }
+  }
+}
+
+function warnIfSparkleBlocked(logger: Logger) {
+  const tools = findSparkleTools(process.env.SPARKLE_BIN);
+  if (!tools) {
+    return;
+  }
+
+  for (const target of [tools.signUpdate, tools.generateAppcast]) {
+    try {
+      run("spctl", ["--assess", "-vv", target], { quiet: true });
+    } catch {
+      logger.warn(`Sparkle tool not approved by Gatekeeper: ${target}`);
+      logger.warn(`Run: sudo spctl --add --label Sparkle "${target}"`);
     }
   }
 }
