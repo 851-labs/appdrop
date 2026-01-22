@@ -50,6 +50,7 @@ export function runSetupCi(options: SetupCiOptions, logger: Logger) {
   if (plan.installSparkle) {
     ensureSparkleTools(logger);
     clearSparkleQuarantine(logger);
+    codesignSparkleTools(logger);
   }
 }
 
@@ -260,6 +261,29 @@ function clearSparkleQuarantine(logger: Logger) {
       logger.info(`Cleared quarantine: ${target}`);
     } catch {
       // ignore if no quarantine attribute
+    }
+  }
+}
+
+function codesignSparkleTools(logger: Logger) {
+  const identity = process.env.DEVELOPER_ID_APPLICATION;
+  if (!identity) {
+    logger.warn("DEVELOPER_ID_APPLICATION not set; skipping Sparkle tool codesign.");
+    return;
+  }
+
+  const tools = findSparkleTools(process.env.SPARKLE_BIN);
+  if (!tools) {
+    return;
+  }
+
+  const targets = [tools.signUpdate, tools.generateAppcast];
+  for (const target of targets) {
+    try {
+      run("/usr/bin/codesign", ["--force", "--options", "runtime", "--timestamp", "--sign", identity, target]);
+      logger.info(`Codesigned Sparkle tool: ${target}`);
+    } catch (error) {
+      logger.warn(`Failed to codesign Sparkle tool: ${target}`);
     }
   }
 }
