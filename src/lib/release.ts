@@ -127,21 +127,8 @@ export function signSparkle(appPath: string, identity: string, sparkleEntitlemen
     return;
   }
 
-  const sparkleVersion = path.join(sparkleFramework, "Versions/B");
-  const updaterApp = path.join(sparkleVersion, "Updater.app");
-  const autoupdate = path.join(sparkleVersion, "Autoupdate");
-  const downloaderXpc = path.join(sparkleVersion, "XPCServices/Downloader.xpc");
-  const installerXpc = path.join(sparkleVersion, "XPCServices/Installer.xpc");
-
-  const shouldUseEntitlements = Boolean(sparkleEntitlementsPath);
-
-  signIfExists(path.join(updaterApp, "Contents/MacOS/Updater"), identity, null);
-  signIfExists(autoupdate, identity, null);
-
-  signIfExists(updaterApp, identity, null);
-  signSparkleXpc(downloaderXpc, identity, true);
-  signSparkleXpc(installerXpc, identity);
-  signIfExists(sparkleFramework, identity, null);
+  // Follow Sparkle's standard workflow: do not re-sign Sparkle helpers here.
+  // Signing Sparkle's embedded services is handled by Sparkle/Xcode distribution.
 }
 
 export function createDmg(appPath: string, dmgPath: string, name: string, identity: string) {
@@ -178,28 +165,6 @@ export function signIfExists(target: string, identity: string, entitlementsPath:
   run(args[0], args.slice(1));
 }
 
-function signSparkleXpc(target: string, identity: string, preserveEntitlements = false) {
-  if (!fs.existsSync(target)) {
-    return;
-  }
-
-  const args = [
-    "/usr/bin/codesign",
-    "--force",
-    "--options",
-    "runtime",
-    "--timestamp",
-    "--sign",
-    identity,
-  ];
-
-  if (preserveEntitlements) {
-    args.push("--preserve-metadata=entitlements");
-  }
-
-  args.push(target);
-  run(args[0], args.slice(1));
-}
 
 export function notarizeArtifact(notaryKeyPath: string, env: Record<string, string>, target: string, label: string) {
   const timeoutMs = parseDuration(process.env.APPDROP_NOTARY_TIMEOUT ?? "2h");
