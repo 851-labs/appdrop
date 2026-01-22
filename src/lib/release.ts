@@ -99,6 +99,8 @@ export function buildApp(
     archivePath,
     "-destination",
     "platform=macOS,arch=arm64",
+    "CODE_SIGN_STYLE=Manual",
+    `CODE_SIGN_IDENTITY=${identity}`,
     "archive",
   ]);
 
