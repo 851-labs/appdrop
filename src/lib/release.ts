@@ -135,14 +135,10 @@ export function signSparkle(appPath: string, identity: string, sparkleEntitlemen
 
   const shouldUseEntitlements = Boolean(sparkleEntitlementsPath);
 
-  signIfExists(path.join(updaterApp, "Contents/MacOS/Updater"), identity, sparkleEntitlementsPath);
-  signIfExists(autoupdate, identity, sparkleEntitlementsPath);
+  signIfExists(path.join(updaterApp, "Contents/MacOS/Updater"), identity, null);
+  signIfExists(autoupdate, identity, null);
 
-  if (shouldUseEntitlements) {
-    signIfExists(updaterApp, identity, sparkleEntitlementsPath);
-  } else {
-    signIfExists(updaterApp, identity, null);
-  }
+  signIfExists(updaterApp, identity, null);
   signSparkleXpc(downloaderXpc, identity, true);
   signSparkleXpc(installerXpc, identity);
   signIfExists(sparkleFramework, identity, null);
