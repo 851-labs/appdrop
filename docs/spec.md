@@ -68,6 +68,7 @@ Optional:
 - `APP_STORE_CONNECT_ISSUER_ID`
 - `DEVELOPER_ID_CERT_P12`
 - `DEVELOPER_ID_CERT_PASSWORD`
+- `APPDROP_TEAM_ID`
 - `GITHUB_TOKEN`
 - `SPARKLE_BIN`
 - `XCODE_PATH`
@@ -86,6 +87,8 @@ appdrop automatically loads a `.env` file in the current working directory (if p
 
 `publish` uses `GITHUB_TOKEN` (or `GH_TOKEN`) and the `gh` CLI.
 If no assets are specified, `publish` uploads `build/release/*.dmg`, `build/release/*.pkg`, and `build/release/appcast.xml` when present.
+
+`release` uses Xcode archive/export and relies on Xcode to sign embedded Sparkle helpers.
 
 ## Example Usage
 

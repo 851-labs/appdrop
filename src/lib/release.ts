@@ -16,6 +16,8 @@ export function runReleasePipeline(context: ReleaseContext) {
 
   const buildDir = pipeline.buildDir;
   const derivedData = path.join(buildDir, "DerivedData");
+  const archivePath = path.join(buildDir, `${project.name}.xcarchive`);
+  const exportDir = path.join(buildDir, "Export");
   const appPath = path.join(buildDir, `${project.name}.app`);
   const appZip = path.join(buildDir, `${project.name}.zip`);
   const dmgPath = path.join(buildDir, `${project.name}.dmg`);
@@ -26,30 +28,18 @@ export function runReleasePipeline(context: ReleaseContext) {
 
   const needsNotary = pipeline.notarizeApp || pipeline.notarizeDmg;
   const notaryKeyPath = needsNotary ? writeNotaryKey(buildDir, env.APP_STORE_CONNECT_PRIVATE_KEY) : null;
-  const entitlementsDir = fs.mkdtempSync(path.join(buildDir, "entitlements-"));
-
   try {
-    const bundleId = resolveBundleIdentifier(project);
-    const appEntitlementsPath = prepareEntitlements(pipeline.entitlementsPath, bundleId, entitlementsDir, "app");
-    const sparkleEntitlementsPath = prepareEntitlements(
-      pipeline.sparkleEntitlementsPath,
-      bundleId,
-      entitlementsDir,
-      "sparkle"
-    );
+    const exportOptionsPath = writeExportOptions(buildDir, env.DEVELOPER_ID_APPLICATION, env.APPDROP_TEAM_ID);
 
-    buildApp(project, derivedData, env.DEVELOPER_ID_APPLICATION);
+    buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath, env.DEVELOPER_ID_APPLICATION);
 
-    const builtApp = path.join(derivedData, "Build/Products", "Release", `${project.name}.app`);
+    const builtApp = path.join(exportDir, `${project.name}.app`);
     ensureDirectory(builtApp, "Built app not found");
 
     fs.rmSync(appPath, { recursive: true, force: true });
     fs.rmSync(dmgPath, { force: true });
     fs.rmSync(appZip, { force: true });
     fs.cpSync(builtApp, appPath, { recursive: true });
-
-    signSparkle(appPath, env.DEVELOPER_ID_APPLICATION, sparkleEntitlementsPath);
-    signApp(appPath, env.DEVELOPER_ID_APPLICATION, appEntitlementsPath);
 
     if (pipeline.notarizeApp) {
       if (!notaryKeyPath) {
@@ -82,11 +72,20 @@ export function runReleasePipeline(context: ReleaseContext) {
     if (notaryKeyPath) {
       fs.rmSync(path.dirname(notaryKeyPath), { recursive: true, force: true });
     }
-    fs.rmSync(entitlementsDir, { recursive: true, force: true });
   }
 }
 
-export function buildApp(project: ProjectInfo, derivedData: string, identity: string) {
+export function buildApp(
+  project: ProjectInfo,
+  derivedData: string,
+  archivePath: string,
+  exportDir: string,
+  exportOptionsPath: string,
+  identity: string
+) {
+  fs.rmSync(archivePath, { recursive: true, force: true });
+  fs.rmSync(exportDir, { recursive: true, force: true });
+
   run("xcodebuild", [
     "-project",
     project.projectPath,
@@ -96,39 +95,24 @@ export function buildApp(project: ProjectInfo, derivedData: string, identity: st
     "Release",
     "-derivedDataPath",
     derivedData,
+    "-archivePath",
+    archivePath,
     "-destination",
     "platform=macOS,arch=arm64",
     `CODE_SIGN_IDENTITY=${identity}`,
     "CODE_SIGN_STYLE=Manual",
-    "build",
+    "archive",
   ]);
-}
 
-export function signApp(appPath: string, identity: string, entitlementsPath: string | null) {
-  if (!entitlementsPath) {
-    throw new AppdropError("Missing app entitlements", 2);
-  }
-  run("/usr/bin/codesign", [
-    "--force",
-    "--options",
-    "runtime",
-    "--timestamp",
-    "--entitlements",
-    entitlementsPath,
-    "--sign",
-    identity,
-    appPath,
+  run("xcodebuild", [
+    "-exportArchive",
+    "-archivePath",
+    archivePath,
+    "-exportPath",
+    exportDir,
+    "-exportOptionsPlist",
+    exportOptionsPath,
   ]);
-}
-
-export function signSparkle(appPath: string, identity: string, sparkleEntitlementsPath: string | null) {
-  const sparkleFramework = path.join(appPath, "Contents/Frameworks/Sparkle.framework");
-  if (!fs.existsSync(sparkleFramework)) {
-    return;
-  }
-
-  // Follow Sparkle's standard workflow: do not re-sign Sparkle helpers here.
-  // Signing Sparkle's embedded services is handled by Sparkle/Xcode distribution.
 }
 
 export function createDmg(appPath: string, dmgPath: string, name: string, identity: string) {
@@ -283,47 +267,37 @@ export function writeNotaryKey(buildDir: string, key: string): string {
   return keyPath;
 }
 
-export function resolveBundleIdentifier(project: ProjectInfo): string | null {
-  try {
-    const result = run("xcodebuild", [
-      "-project",
-      project.projectPath,
-      "-scheme",
-      project.scheme,
-      "-configuration",
-      "Release",
-      "-showBuildSettings",
-    ], { quiet: true });
-    const match = result.stdout.match(/\bPRODUCT_BUNDLE_IDENTIFIER\b\s*=\s*(.+)/);
-    return match ? match[1].trim() : null;
-  } catch {
-    return null;
-  }
+export function writeExportOptions(buildDir: string, identity: string, explicitTeamId?: string): string {
+  const teamId = resolveTeamId(identity, explicitTeamId);
+  const exportOptionsPath = path.join(buildDir, "export-options.plist");
+  const content = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>developer-id</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>teamID</key>
+  <string>${teamId}</string>
+  <key>signingCertificate</key>
+  <string>Developer ID Application</string>
+</dict>
+</plist>
+`;
+  fs.writeFileSync(exportOptionsPath, content);
+  return exportOptionsPath;
 }
 
-export function prepareEntitlements(
-  entitlementsPath: string | null,
-  bundleId: string | null,
-  outputDir: string,
-  label: string
-): string | null {
-  if (!entitlementsPath) {
-    return null;
+export function resolveTeamId(identity: string, explicitTeamId?: string): string {
+  if (explicitTeamId) {
+    return explicitTeamId;
   }
 
-  if (!bundleId) {
-    return entitlementsPath;
+  const match = identity.match(/\(([A-Z0-9]{10})\)/);
+  if (match) {
+    return match[1];
   }
 
-  const content = fs.readFileSync(entitlementsPath, "utf8");
-  if (!content.includes("PRODUCT_BUNDLE_IDENTIFIER")) {
-    return entitlementsPath;
-  }
-
-  const replaced = content
-    .replace(/\$\(PRODUCT_BUNDLE_IDENTIFIER\)/g, bundleId)
-    .replace(/\$\{PRODUCT_BUNDLE_IDENTIFIER\}/g, bundleId);
-  const outputPath = path.join(outputDir, `${label}.entitlements`);
-  fs.writeFileSync(outputPath, replaced);
-  return outputPath;
+  throw new AppdropError("Missing team ID. Set APPDROP_TEAM_ID or include it in DEVELOPER_ID_APPLICATION.", 2);
 }
