@@ -3,7 +3,7 @@ import { Logger } from "../lib/logger";
 import { findProject } from "../lib/project";
 import { detectPipeline } from "../lib/pipeline";
 import { loadEnv } from "../lib/env";
-import { buildApp, signApp, signSparkle } from "../lib/release";
+import { buildApp, writeExportOptions } from "../lib/release";
 import { UsageError } from "../lib/errors";
 
 export interface BuildOptions {
@@ -29,11 +29,12 @@ export function runBuild(options: BuildOptions, logger: Logger) {
   }
 
   const derivedData = path.join(pipeline.buildDir, "DerivedData");
-  buildApp(project, derivedData, env.DEVELOPER_ID_APPLICATION);
+  const archivePath = path.join(pipeline.buildDir, `${project.name}.xcarchive`);
+  const exportDir = path.join(pipeline.buildDir, "Export");
+  const exportOptionsPath = writeExportOptions(pipeline.buildDir, env.DEVELOPER_ID_APPLICATION, env.APPDROP_TEAM_ID);
 
-  const builtApp = path.join(derivedData, "Build/Products", "Release", `${project.name}.app`);
-  signSparkle(builtApp, env.DEVELOPER_ID_APPLICATION, pipeline.sparkleEntitlementsPath);
-  signApp(builtApp, env.DEVELOPER_ID_APPLICATION, pipeline.entitlementsPath);
+  buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath, env.DEVELOPER_ID_APPLICATION);
 
+  const builtApp = path.join(exportDir, `${project.name}.app`);
   logger.info(`Built app: ${builtApp}`);
 }
