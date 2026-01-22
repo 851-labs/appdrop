@@ -64,6 +64,10 @@ export function resolveSetupCiPlan(options: SetupCiOptions): SetupCiPlan {
   };
 }
 
+export function shouldDeleteKeychain(options: SetupCiOptions) {
+  return options.force || isGithubActions();
+}
+
 function selectXcode(explicitPath: string | undefined, logger: Logger) {
   const xcodePath = resolveXcodePath(explicitPath);
   const developerDir = path.join(xcodePath, "Contents", "Developer");
@@ -99,17 +103,14 @@ function setupKeychainForCi(options: SetupCiOptions, logger: Logger) {
   const keychainName = normalizeKeychainName(options.keychainName ?? "appdrop-ci");
   const keychainPassword = crypto.randomBytes(12).toString("hex");
 
-  const keychainExists = hasKeychain(keychainName);
-  if (keychainExists) {
-    if (options.force || isGithubActions()) {
-      try {
-        run("security", ["delete-keychain", keychainName], { quiet: true });
-      } catch {
-        // ignore missing keychain
-      }
-    } else {
-      throw new AppdropError(`Keychain already exists: ${keychainName}. Use --force to recreate.`, 1);
+  if (shouldDeleteKeychain(options)) {
+    try {
+      run("security", ["delete-keychain", keychainName], { quiet: true });
+    } catch {
+      // ignore missing keychain
     }
+  } else if (hasKeychain(keychainName)) {
+    throw new AppdropError(`Keychain already exists: ${keychainName}. Use --force to recreate.`, 1);
   }
 
   logger.info(`Creating keychain: ${keychainName}`);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { resolveSetupCiPlan } from "../src/commands/setup-ci";
+import { resolveSetupCiPlan, shouldDeleteKeychain } from "../src/commands/setup-ci";
 
 describe("setup-ci planning", () => {
   it("defaults to both setup steps", () => {
@@ -35,6 +35,18 @@ describe("setup-ci planning", () => {
     const keychainOnly = resolveSetupCiPlan({ ...baseOptions(), keychainOnly: true });
     expect(keychainOnly.setupXcode).toBeFalse();
     expect(keychainOnly.setupKeychain).toBeTrue();
+  });
+
+  it("deletes keychain in GitHub Actions", () => {
+    withEnv({ GITHUB_ACTIONS: "true", GITHUB_ENV: "/tmp/github-env" }, () => {
+      expect(shouldDeleteKeychain(baseOptions())).toBeTrue();
+    });
+  });
+
+  it("deletes keychain when forced", () => {
+    withEnv({ GITHUB_ACTIONS: undefined, GITHUB_ENV: undefined }, () => {
+      expect(shouldDeleteKeychain({ ...baseOptions(), force: true })).toBeTrue();
+    });
   });
 });
 
