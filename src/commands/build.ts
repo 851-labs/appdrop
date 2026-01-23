@@ -33,7 +33,7 @@ export function runBuild(options: BuildOptions, logger: Logger) {
   const exportDir = path.join(pipeline.buildDir, "Export");
   const exportOptionsPath = writeExportOptions(pipeline.buildDir, env.DEVELOPER_ID_APPLICATION, env.APPDROP_TEAM_ID);
 
-  buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath);
+  buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath, env.DEVELOPER_ID_APPLICATION);
 
   const builtApp = path.join(exportDir, `${project.name}.app`);
   logger.info(`Built app: ${builtApp}`);

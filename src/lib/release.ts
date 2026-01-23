@@ -31,7 +31,7 @@ export function runReleasePipeline(context: ReleaseContext) {
   try {
     const exportOptionsPath = writeExportOptions(buildDir, env.DEVELOPER_ID_APPLICATION, env.APPDROP_TEAM_ID);
 
-    buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath);
+    buildApp(project, derivedData, archivePath, exportDir, exportOptionsPath, env.DEVELOPER_ID_APPLICATION);
 
     const builtApp = path.join(exportDir, `${project.name}.app`);
     ensureDirectory(builtApp, "Built app not found");
@@ -80,13 +80,14 @@ export function buildApp(
   derivedData: string,
   archivePath: string,
   exportDir: string,
-  exportOptionsPath: string
+  exportOptionsPath: string,
+  identity: string
 ) {
   fs.rmSync(archivePath, { recursive: true, force: true });
   fs.rmSync(exportDir, { recursive: true, force: true });
 
   // Sparkle expects Xcode archive/export signing. Avoid manual helper re-signing.
-  run("xcodebuild", buildArchiveArgs(project, derivedData, archivePath));
+  run("xcodebuild", buildArchiveArgs(project, derivedData, archivePath, identity));
 
   run("xcodebuild", buildExportArgs(archivePath, exportDir, exportOptionsPath));
 }
@@ -94,7 +95,8 @@ export function buildApp(
 export function buildArchiveArgs(
   project: ProjectInfo,
   derivedData: string,
-  archivePath: string
+  archivePath: string,
+  identity: string
 ) {
   return [
     "-project",
@@ -109,6 +111,8 @@ export function buildArchiveArgs(
     archivePath,
     "-destination",
     "platform=macOS,arch=arm64",
+    "CODE_SIGN_STYLE=Manual",
+    `CODE_SIGN_IDENTITY=${identity}`,
     "archive",
   ];
 }
