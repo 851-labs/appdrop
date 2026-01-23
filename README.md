@@ -13,13 +13,23 @@ export SPARKLE_PRIVATE_KEY="BASE64_KEY"
 bun run src/index.ts release --dry-run
 ```
 
-## Install
+## Installation
+
+### Homebrew
 
 ```
 brew install 851-labs/tap/appdrop
 ```
 
-## Docs
+## Tech Stack
 
-- `docs/spec.md`
-- `docs/testing.md`
+- [OpenCode](https://opencode.ai/) - AI Coding Agent
+- [Bun](https://bun.com/) - Scripts
+
+## License
+
+This project is released under the MIT License. See [LICENSE](LICENSE.md) for details.
+
+## Support
+
+If you like this project, please consider giving it a star. ️
