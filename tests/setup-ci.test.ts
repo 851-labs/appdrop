@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import path from "path";
 
 import { resolveSetupCiPlan, shouldDeleteKeychain } from "../src/commands/setup-ci";
 
@@ -24,6 +25,36 @@ describe("setup-ci planning", () => {
     withEnv({ GITHUB_ACTIONS: undefined, GITHUB_ENV: undefined, SPARKLE_PRIVATE_KEY: "key" }, () => {
       const plan = resolveSetupCiPlan(baseOptions());
       expect(plan.installSparkle).toBeTrue();
+    });
+  });
+
+  it("auto-installs sparkle when project has Sparkle keys", () => {
+    const originalCwd = process.cwd();
+    const sparkleOnRoot = path.join(import.meta.dir, "fixtures", "sparkle-on");
+
+    withEnv({ SPARKLE_PRIVATE_KEY: undefined }, () => {
+      process.chdir(sparkleOnRoot);
+      try {
+        const plan = resolveSetupCiPlan(baseOptions());
+        expect(plan.installSparkle).toBeTrue();
+      } finally {
+        process.chdir(originalCwd);
+      }
+    });
+  });
+
+  it("does not install sparkle for CLI projects", () => {
+    const originalCwd = process.cwd();
+    const cliRoot = path.join(import.meta.dir, "fixtures", "swift-cli");
+
+    withEnv({ SPARKLE_PRIVATE_KEY: undefined }, () => {
+      process.chdir(cliRoot);
+      try {
+        const plan = resolveSetupCiPlan(baseOptions());
+        expect(plan.installSparkle).toBeFalse();
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
   });
 

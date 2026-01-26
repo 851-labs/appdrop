@@ -7,7 +7,7 @@ import { Logger } from "../lib/logger";
 import { AppdropError, UsageError } from "../lib/errors";
 import { run } from "../lib/exec";
 import { loadEnv } from "../lib/env";
-import { findSparkleTools } from "../lib/pipeline";
+import { findSparkleTools, locateInfoPlist, hasSparkleKeys } from "../lib/pipeline";
 
 export interface SetupCiOptions {
   xcodeOnly: boolean;
@@ -236,7 +236,18 @@ function isGithubActions() {
 }
 
 function shouldInstallSparkle() {
-  return Boolean(process.env.SPARKLE_PRIVATE_KEY);
+  // Explicit flag or env var takes precedence
+  if (process.env.SPARKLE_PRIVATE_KEY) {
+    return true;
+  }
+
+  // Auto-detect from project
+  const infoPlist = locateInfoPlist(process.cwd());
+  if (infoPlist && hasSparkleKeys(infoPlist)) {
+    return true;
+  }
+
+  return false;
 }
 
 function ensureSparkleTools(logger: Logger) {
