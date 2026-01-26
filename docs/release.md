@@ -14,7 +14,7 @@ This document describes how to publish a new appdrop release.
 Update `appdrop/src/lib/version.ts`:
 
 ```
-export const APPDROP_VERSION = process.env.APPDROP_VERSION ?? "0.1.27";
+export const APPDROP_VERSION = process.env.APPDROP_VERSION ?? "0.1.31";
 ```
 
 Commit the version bump.
@@ -26,8 +26,8 @@ Add release notes to `CHANGELOG.md` under a new version heading. Only include me
 ## 3) Tag the Release
 
 ```
-git tag v0.1.27
-git push origin v0.1.27
+git tag v0.1.31
+git push origin v0.1.31
 ```
 
 Tagging triggers the GitHub Release workflow, which builds `dist/appdrop` and publishes it.
@@ -42,7 +42,7 @@ gh run watch <RUN_ID>
 Then confirm the assets:
 
 ```
-gh release view v0.1.27 --json url,assets
+gh release view v0.1.31 --json url,assets
 ```
 
 ## 5) Update Homebrew Tap
@@ -57,7 +57,7 @@ Edit `Formula/appdrop.rb` with the new version and SHA256, then:
 
 ```
 git add Formula/appdrop.rb
-git commit -m "bump appdrop to 0.1.27"
+git commit -m "bump appdrop to 0.1.31"
 git push
 ```
 

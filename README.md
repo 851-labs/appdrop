@@ -28,7 +28,7 @@ brew install 851-labs/tap/appdrop
 
 ## License
 
-This project is released under the MIT License. See [LICENSE](LICENSE.md) for details.
+This project is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Support
 
