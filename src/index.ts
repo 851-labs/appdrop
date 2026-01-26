@@ -1,6 +1,7 @@
 import { parseArgs, commandHelpText } from "./lib/cli";
 import { Logger } from "./lib/logger";
 import { AppdropError, UsageError } from "./lib/errors";
+import { style, symbols } from "./lib/color";
 import { runRelease } from "./commands/release";
 import { runDoctor } from "./commands/doctor";
 import { runBuild } from "./commands/build";
@@ -185,16 +186,16 @@ Run 'appdrop <command> --help' for command-specific options.
 
 function handleError(error: unknown): never {
   if (error instanceof UsageError) {
-    process.stderr.write(`error: ${error.message}\n`);
+    process.stderr.write(`${style.error("error:")} ${error.message}\n`);
     if (error.hint) {
-      process.stderr.write(`\n${error.hint}\n`);
+      process.stderr.write(`\n${style.hint(error.hint)}\n`);
     }
     process.exit(error.code);
   }
   if (error instanceof AppdropError) {
-    process.stderr.write(`${error.message}\n`);
+    process.stderr.write(`${symbols.error} ${style.error(error.message)}\n`);
     process.exit(error.code);
   }
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(`${symbols.error} ${style.error(error instanceof Error ? error.message : String(error))}\n`);
   process.exit(1);
 }
