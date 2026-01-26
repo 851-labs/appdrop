@@ -1,4 +1,5 @@
 import { UsageError } from "./errors";
+import { suggest } from "./suggest";
 
 export interface GlobalFlags {
   help: boolean;
@@ -52,6 +53,43 @@ export const VALID_COMMANDS = [
   "doctor",
   "setup-ci",
   "publish",
+] as const;
+
+export const VALID_FLAGS = [
+  "-h", "--help",
+  "--version",
+  "-q", "--quiet",
+  "-v", "--verbose",
+  "--json",
+  "--plain",
+  "-n", "--dry-run",
+  "--no-input",
+  "-s", "--scheme",
+  "-p", "--project",
+  "-o", "--output",
+  "--executable",
+  "--no-notarize",
+  "--no-dmg",
+  "--no-sparkle",
+  "--fix",
+  "--app-path",
+  "--dmg-path",
+  "--zip-path",
+  "--appcast-url",
+  "--xcode-only",
+  "--keychain-only",
+  "--xcode-path",
+  "--keychain-name",
+  "--write-github-env",
+  "--force",
+  "--install-sparkle",
+  "--tag",
+  "--title",
+  "--notes",
+  "--notes-file",
+  "--asset",
+  "--draft",
+  "--prerelease",
 ] as const;
 
 const COMMAND_HELP: Record<
@@ -417,7 +455,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
         break;
       default:
         if (arg.startsWith("-")) {
-          throw new UsageError(`Unknown flag: ${arg}`, {
+          const suggestion = suggest(arg, VALID_FLAGS);
+          const didYouMean = suggestion ? `\n\nDid you mean: ${suggestion}` : "";
+          throw new UsageError(`Unknown flag: ${arg}${didYouMean}`, {
             hint: `Run 'appdrop ${command} --help' for available options.`,
             command,
           });

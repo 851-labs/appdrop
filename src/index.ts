@@ -1,4 +1,5 @@
-import { parseArgs, commandHelpText } from "./lib/cli";
+import { parseArgs, commandHelpText, VALID_COMMANDS } from "./lib/cli";
+import { suggest } from "./lib/suggest";
 import { Logger } from "./lib/logger";
 import { AppdropError, UsageError } from "./lib/errors";
 import { style, symbols } from "./lib/color";
@@ -145,9 +146,12 @@ try {
         logger
       );
       break;
-    default:
-      process.stderr.write(`Unknown command: ${command}\n\nRun 'appdrop --help' for usage.\n`);
+    default: {
+      const suggestion = suggest(command, VALID_COMMANDS);
+      const didYouMean = suggestion ? `\n\nDid you mean: ${style.info(suggestion)}?` : "";
+      process.stderr.write(`${style.error("Unknown command:")} ${command}${didYouMean}\n\nRun 'appdrop --help' for usage.\n`);
       process.exit(2);
+    }
   }
 } catch (error) {
   handleError(error);

@@ -208,13 +208,23 @@ describe("error handling", () => {
 
     it("includes command context in unknown flag error", () => {
       try {
-        parseArgs(["doctor", "--foo"]);
+        parseArgs(["doctor", "--foobar"]);
       } catch (error) {
         expect(error).toBeInstanceOf(UsageError);
         const usageError = error as UsageError;
-        expect(usageError.message).toBe("Unknown flag: --foo");
+        expect(usageError.message).toContain("Unknown flag: --foobar");
         expect(usageError.command).toBe("doctor");
         expect(usageError.hint).toContain("appdrop doctor --help");
+      }
+    });
+
+    it("suggests similar flag in error message", () => {
+      try {
+        parseArgs(["release", "--schem"]);
+      } catch (error) {
+        expect(error).toBeInstanceOf(UsageError);
+        const usageError = error as UsageError;
+        expect(usageError.message).toContain("Did you mean: --scheme");
       }
     });
 
