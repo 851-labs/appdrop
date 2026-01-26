@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.31 - 2026-01-26
+- feat: add did-you-mean suggestions for typos
+- feat: add color output with TTY detection (NO_COLOR/FORCE_COLOR support)
+- feat: improve error messages with context and hints
+- feat: add short flags (-s, -p, -o) for common options
+- feat: lead help text with examples
+
+## 0.1.30 - 2026-01-25
+- feat: auto-detect Sparkle from project Info.plist in setup-ci
+
 ## 0.1.29 - 2026-01-25
 - feat: add Swift Package CLI support
 - feat: add --executable flag for CLI target override
