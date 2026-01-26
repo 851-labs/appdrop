@@ -66,10 +66,10 @@ const COMMAND_HELP: Record<
       "appdrop release --no-notarize    # Skip notarization (faster)",
     ],
     flags: [
-      "--scheme <name>       Override scheme",
-      "--project <path>      Override xcodeproj",
+      "-s, --scheme <name>   Override scheme",
+      "-p, --project <path>  Override xcodeproj",
       "--executable <name>   Override CLI executable name (Swift Package only)",
-      "--output <dir>        Output directory",
+      "-o, --output <dir>    Output directory",
       "--no-dmg              Skip DMG creation",
       "--no-notarize         Skip notarization",
       "--no-sparkle          Skip Sparkle signing + appcast",
@@ -85,9 +85,9 @@ const COMMAND_HELP: Record<
       "appdrop build --output dist      # Custom output directory",
     ],
     flags: [
-      "--scheme <name>       Override scheme",
-      "--project <path>      Override xcodeproj",
-      "--output <dir>        Output directory",
+      "-s, --scheme <name>   Override scheme",
+      "-p, --project <path>  Override xcodeproj",
+      "-o, --output <dir>    Output directory",
       "--json                JSON output",
     ],
   },
@@ -98,9 +98,9 @@ const COMMAND_HELP: Record<
     ],
     flags: [
       "--app-path <path>     Path to .app bundle (required)",
-      "--scheme <name>       Override scheme",
-      "--project <path>      Override xcodeproj",
-      "--output <dir>        Output directory",
+      "-s, --scheme <name>   Override scheme",
+      "-p, --project <path>  Override xcodeproj",
+      "-o, --output <dir>    Output directory",
       "--json                JSON output",
     ],
   },
@@ -124,7 +124,7 @@ const COMMAND_HELP: Record<
     flags: [
       "--dmg-path <path>     Path to .dmg (required)",
       "--appcast-url <url>   Override appcast URL",
-      "--output <dir>        Output directory",
+      "-o, --output <dir>    Output directory",
       "--json                JSON output",
     ],
   },
@@ -135,8 +135,8 @@ const COMMAND_HELP: Record<
       "appdrop doctor --fix             # Auto-fix issues",
     ],
     flags: [
-      "--scheme <name>       Override scheme",
-      "--project <path>      Override xcodeproj",
+      "-s, --scheme <name>   Override scheme",
+      "-p, --project <path>  Override xcodeproj",
       "--fix                 Apply project fixes",
     ],
   },
@@ -308,14 +308,17 @@ export function parseArgs(argv: string[]): ParsedArgs {
       case "--no-input":
         flags.noInput = true;
         break;
+      case "-s":
       case "--scheme":
         flags.scheme = consumeValue(args, index, arg);
         index += 1;
         break;
+      case "-p":
       case "--project":
         flags.project = consumeValue(args, index, arg);
         index += 1;
         break;
+      case "-o":
       case "--output":
         flags.output = consumeValue(args, index, arg);
         index += 1;
